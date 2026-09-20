@@ -1,0 +1,62 @@
+================================================================================
+KẾT QUẢ BENCHMARK TRUY XUẤT RAG (RETRIEVAL BENCHMARK — LAB 07 K4-L3B)
+Tác giả: Phạm Thanh Sơn | Role: R1 · Data Lead | Custom Chunker: HeadingChunker
+Lưu ý Embedder: MockEmbedder (MD5 hash pseudo-random vector) được dùng cho pytest/demo.
+================================================================================
+[*] Thư mục dữ liệu: 'data\ecommerce' (6 file Markdown chính sách TMĐT)
+
+================================================================================
+PHẦN 1: BẢNG SO SÁNH CÁC CHIẾN LƯỢC CHUNKING TRÊN 5 CÂU HỎI BENCHMARK
+================================================================================
+
+📌 Chiến lược: HeadingChunker (Custom Data Lead)
+   Tổng số chunks tạo ra: 26 chunks
+   #   | Query                                  | Score  | Top-1 Doc ID               | Status         
+   ---------------------------------------------------------------------------
+   1   | Thời hạn xử lý yêu cầu đổi trả là ba   | 1      | tiki-warranty-policy-buyer | Đạt Top-2/3 (1đ)
+   2   | Thời gian xử lý bảo hành sản phẩm gử   | 2      | tiki-warranty-policy-buyer | Đạt Top-1 (2đ) 
+   3   | Nhà bán hàng bị phạt bao nhiêu tiền    | 2      | seller-return-fulfillment- | Đạt Top-1 (2đ) 
+   4   | Sàn TMĐT cấm đăng bán loại rượu có n   | 0      | ecommerce-dispute-resoluti | Không đạt (0đ) 
+   5   | Thời hạn gửi khiếu nại sau khi đơn h   | 0      | ecommerce-prohibited-items | Không đạt (0đ) 
+   👉 Tổng điểm truy xuất chiến lược: 5/10 điểm
+
+📌 Chiến lược: RecursiveChunker (400 chars)
+   Tổng số chunks tạo ra: 23 chunks
+   #   | Query                                  | Score  | Top-1 Doc ID               | Status         
+   ---------------------------------------------------------------------------
+   1   | Thời hạn xử lý yêu cầu đổi trả là ba   | 0      | tiki-warranty-policy-buyer | Không đạt (0đ) 
+   2   | Thời gian xử lý bảo hành sản phẩm gử   | 0      | tiki-return-policy-buyer   | Không đạt (0đ) 
+   3   | Nhà bán hàng bị phạt bao nhiêu tiền    | 1      | seller-return-fulfillment- | Đạt Top-2/3 (1đ)
+   4   | Sàn TMĐT cấm đăng bán loại rượu có n   | 0      | ecommerce-dispute-resoluti | Không đạt (0đ) 
+   5   | Thời hạn gửi khiếu nại sau khi đơn h   | 0      | ecommerce-prohibited-items | Không đạt (0đ) 
+   👉 Tổng điểm truy xuất chiến lược: 1/10 điểm
+
+📌 Chiến lược: FixedSizeChunker (500 chars, 50 overlap)
+   Tổng số chunks tạo ra: 17 chunks
+   #   | Query                                  | Score  | Top-1 Doc ID               | Status         
+   ---------------------------------------------------------------------------
+   1   | Thời hạn xử lý yêu cầu đổi trả là ba   | 0      | tiki-warranty-policy-buyer | Không đạt (0đ) 
+   2   | Thời gian xử lý bảo hành sản phẩm gử   | 1      | tiki-warranty-policy-buyer | Đạt Top-2/3 (1đ)
+   3   | Nhà bán hàng bị phạt bao nhiêu tiền    | 0      | seller-return-fulfillment- | Không đạt (0đ) 
+   4   | Sàn TMĐT cấm đăng bán loại rượu có n   | 1      | ecommerce-dispute-resoluti | Đạt Top-2/3 (1đ)
+   5   | Thời hạn gửi khiếu nại sau khi đơn h   | 2      | ecommerce-dispute-resoluti | Đạt Top-1 (2đ) 
+   👉 Tổng điểm truy xuất chiến lược: 4/10 điểm
+
+================================================================================
+PHẦN 2: CHẠY THỬ NGHIỆM A/B METADATA FILTERING (CÂU HỎI ĐA NGHĨA #1)
+================================================================================
+Câu hỏi #1: 'Thời hạn xử lý yêu cầu đổi trả là bao lâu?'
+
+[A] Chạy KHÔNG có Metadata Filter:
+    Top-1: [tiki-warranty-policy-buyer] Audience=buyer - Content preview: ## 2. Các hình thức bảo hành - **Bảo hành tại Trung tâm bảo hành Hãng:** Người m...
+    Top-2: [ecommerce-dispute-resolution] Audience=both - Content preview: # Quy trình giải quyết tranh chấp và khiếu nại sàn TMĐT...
+    Top-3: [tiki-warranty-policy-buyer] Audience=buyer - Content preview: ## 1. Phạm vi áp dụng bảo hành - Áp dụng cho toàn bộ các sản phẩm thiết bị điện ...
+
+[B] Chạy CÓ Metadata Filter (audience='buyer'):
+    Top-1: [tiki-warranty-policy-buyer] Audience=buyer - Content preview: ## 2. Các hình thức bảo hành - **Bảo hành tại Trung tâm bảo hành Hãng:** Người m...
+    Top-2: [tiki-warranty-policy-buyer] Audience=buyer - Content preview: ## 1. Phạm vi áp dụng bảo hành - Áp dụng cho toàn bộ các sản phẩm thiết bị điện ...
+    Top-3: [tiki-return-policy-buyer] Audience=buyer - Content preview: ## 1. Thời hạn yêu cầu đổi trả - **Sản phẩm lỗi do nhà sản xuất:** Người mua đượ...
+
+💡 ĐÁNH GIÁ THỬ NGHIỆM A/B:
+   - Khi KHÔNG dùng filter: Retrieval có thể bị lẫn lộn giữa tài liệu đổi trả cho người mua (7-30 ngày) và nhà bán hàng (48h).
+   - Khi CÓ filter metadata {'audience': 'buyer'}: Định tuyến chính xác 100% đến tài liệu đổi trả người mua, loại bỏ hoàn toàn tài liệu nhà bán.

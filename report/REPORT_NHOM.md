@@ -1,8 +1,12 @@
 # Báo Cáo Nhóm — Lab 7: Embedding & Vector Store
 
-**Nhóm:** [Tên nhóm]
-**Thành viên:** [Họ tên từng thành viên]
-**Ngày:** [Ngày nộp]
+**Nhóm:** Nhóm G00
+**Thành viên:** 
+-Trần Hoàng Duy Anh-02558
+-Phạm Thanh Sơn - 02794
+-Nguyễn Minh Kiệt-02373
+-Đào Minh Hiếu-02561
+**Ngày:** 20/09/2026
 
 > **Nộp 1 bản / nhóm.** Phần cá nhân (hướng tiếp cận, kết quả riêng, dự đoán…) mỗi thành viên nộp riêng trong `REPORT_CANHAN.md`. Chi tiết thang điểm: `docs/SCORING.md`.
 
@@ -14,21 +18,21 @@
 
 ### Chủ đề (Domain) & Lý Do Chọn
 
-**Chủ đề:** Chính sách đổi trả, bảo hành, quy định người bán/người mua và đăng bán sản phẩm trên sàn thương mại điện tử (K4-L3B E-Commerce Policies).
+**Chủ đề:** Chính sách mua bán và dịch vụ hậu mãi trên sàn thương mại điện tử Tiki.
 
 **Tại sao nhóm chọn chủ đề này?**
-> Bộ dữ liệu chính sách TMĐT chứa nhiều mốc thời gian (3 ngày, 7 ngày, 30 ngày, 48 giờ), hạn mức tài chính (50.000đ, 200.000đ) và đặc biệt phân định rõ ràng giữa các đối tượng tác động (`buyer`, `seller`, `both`). Chủ đề này phản ánh đúng bài toán thực tế của trợ lý hỗ trợ khách hàng và nhà bán hàng, giúp kiểm thử rõ nét hiệu quả của việc lọc metadata (`metadata_filter`).
+Chủ đề này rất phù hợp cho bài lab vì có nhiều tài liệu có cùng lĩnh vực nhưng khác đối tượng và khác quy định. Ngoài ra, dữ liệu có tính cấu trúc rõ ràng, dễ chia theo heading và dễ kiểm chứng bằng metadata như `audience` và `category`.
 
 ### Danh sách tài liệu (Data Inventory)
 
 | # | Tên tài liệu | Nguồn (Source URL) | Ngày lấy / Phiên bản | Số ký tự | Metadata đã gán |
-|---|--------------|------------|--------------------|----------|-----------------|
-| 1 | Chính sách đổi trả sản phẩm dành cho Người mua | https://hotro.tiki.vn/s/article/chinh-sach-doi-tra-san-pham-tai-tiki | 2026-09-20 / 2024-v2 | 1,276 | `audience: buyer`, `category: returns-policy`, `language: vi` |
-| 2 | Chính sách bảo hành sản phẩm dành cho Người mua | https://hotro.tiki.vn/s/article/chinh-sach-bao-hanh-san-pham-tai-tiki | 2026-09-20 / 2024-v1 | 1,082 | `audience: buyer`, `category: warranty-policy`, `language: vi` |
-| 3 | Quy định xử lý đơn hàng và hoàn tiền dành cho Nhà bán hàng | https://hotro.tiki.vn/s/article/quy-trinh-xuy-ly-don-hang-cua-nha-ban | 2026-09-20 / 2024-v3 | 1,053 | `audience: seller`, `category: seller-policy`, `language: vi` |
-| 4 | Quy định trách nhiệm bảo hành và chế tài Nhà bán hàng | https://hotro.tiki.vn/s/article/quy-dinh-dang-ban-danh-cho-nha-ban-hang | 2026-09-20 / not-stated | 882 | `audience: seller`, `category: seller-policy`, `language: vi` |
-| 5 | Danh mục hàng hóa cấm kinh doanh và quy định đăng bán | https://hotro.tiki.vn/s/article/dieu-khoan-su-dung-dich-vu-tiki | 2026-09-20 / 2024-v1 | 1,073 | `audience: both`, `category: product-policy`, `language: vi` |
-| 6 | Quy trình giải quyết tranh chấp và khiếu nại sàn TMĐT | https://hotro.tiki.vn/s/article/chinh-sach-bao-mat-thong-tin | 2026-09-20 / not-stated | 1,092 | `audience: both`, `category: dispute-policy`, `language: vi` |
+|---|--------------|------------------|----------------------|----------|-----------------|
+| 1 | tiki-return-policy-buyer.md | Tiki policy | 2026-09-20 | ~7.2k | audience=buyer, category=return-policy |
+| 2 | tiki-warranty-policy-buyer.md | Tiki policy | 2026-09-20 | ~6.9k | audience=buyer, category=warranty-policy |
+| 3 | seller-return-fulfillment-rules.md | Tiki seller policy | 2026-09-20 | ~6.0k | audience=seller, category=return-ops |
+| 4 | seller-warranty-penalty-rules.md | Tiki seller policy | 2026-09-20 | ~6.8k | audience=seller, category=penalty-policy |
+| 5 | ecommerce-prohibited-items.md | Ecommerce policy | 2026-09-20 | ~6.3k | category=product-policy |
+| 6 | ecommerce-dispute-resolution.md | Ecommerce policy | 2026-09-20 | ~5.5k | category=dispute-policy |
 
 **Danh sách kiểm tra quản trị dữ liệu (Data governance checklist):**
 - [x] Tập tài liệu (Corpus) chỉ chứa nguồn công khai/được phép dùng và không chứa dữ liệu cá nhân, thông tin đăng nhập hoặc tài liệu nội bộ.
@@ -38,75 +42,74 @@
 
 | Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho truy xuất (retrieval)? |
 |----------------|------|---------------|-------------------------------|
-| `doc_id` | String | `tiki-return-policy-buyer` | Định danh duy nhất cho văn bản, giúp truy xuất chính xác tài liệu nguồn và liên kết `sources.csv`. |
-| `audience` | String | `buyer`, `seller`, `both` | Lọc chính xác phạm vi đối tượng áp dụng quy định, tránh trả nhầm chính sách nhà bán cho người mua. |
-| `category` | String | `returns-policy`, `seller-policy` | Phân loại mảng nghiệp vụ (đổi trả, bảo hành, hàng cấm), giúp khoanh vùng truy xuất khi câu hỏi nêu rõ danh mục. |
-| `document_version` | String | `2024-v2`, `not-stated` | Xác định phiên bản quy định hiệu lực, ngăn chặn việc lấy tài liệu cũ lỗi thời. |
-| `source_url` | String | `https://hotro.tiki.vn/...` | Cung cấp đường dẫn trích dẫn minh bạch cho người dùng kiểm chứng thông tin. |
-| `language` | String | `vi` | Phân loại ngôn ngữ của văn bản phục vụ xử lý đa ngôn ngữ nếu có. |
+| audience | string | buyer / seller / both | Phân biệt đúng đối tượng người hỏi và tránh lẫn giữa chính sách khách hàng và nhà bán |
+| category | string | return-policy / dispute-policy | Tách từng loại chính sách để filter khi cần |
+| doc_id | string | tiki-return-policy-buyer | Dùng để định danh file gốc trong store |
+| source_url | string | https://... | Nguồn gốc và kiểm chứng tài liệu |
+| retrieved_at | string | 2026-09-20 | Theo dõi phiên bản dữ liệu |
 
 ---
 
 ## 2. Thiết kế chiến lược (Strategy Design) — Nhóm (15 điểm)
 
+> Mỗi thành viên thử **một chiến lược khác nhau** trên cùng bộ tài liệu; nhóm tổng hợp và so sánh ở đây.
+
 ### Phân tích đường cơ sở (Baseline Analysis)
 
-Chạy `ChunkingStrategyComparator().compare()` trên bộ tài liệu chính sách TMĐT (`chunk_size=400`):
+Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu, sau đó so sánh với benchmark thực tế của nhóm:
 
 | Tài liệu | Chiến lược (Strategy) | Số lượng Chunk | Độ dài trung bình | Giữ được ngữ cảnh không? |
-|-----------|----------|-------------|------------|-------------------|
-| Bộ dữ liệu TMĐT 6 file | FixedSizeChunker (`fixed_size`) | 19 | 388.7 | Trung bình — dễ cắt đôi giữa câu hoặc giữa điều khoản. |
-| Bộ dữ liệu TMĐT 6 file | SentenceChunker (`by_sentences`) | 20 | 321.6 | Tốt cho câu đơn, nhưng làm rời rạc các điều khoản nhiều câu. |
-| Bộ dữ liệu TMĐT 6 file | RecursiveChunker (`recursive`) | 23 | 279.8 | Rất tốt — ưu tiên cắt theo ranh giới đoạn văn và câu tự nhiên. |
+|-----------|----------------------|---------------|------------------|---------------------------|
+| Chính sách Tiki | FixedSizeChunker (`fixed_size`) | tương đối cao | trung bình | Trung bình — dễ cắt xén giữa các mục quan trọng |
+| Chính sách Tiki | SentenceChunker (`by_sentences`) | vừa phải | tương đối ổn | Khá tốt nếu câu dài và cấu trúc rõ |
+| Chính sách Tiki | RecursiveChunker (`recursive`) | vừa đủ | ổn định | Tốt nhất về balance giữa ngữ cảnh và độ dài |
+| Chính sách Tiki | HeadingChunker (`heading`) | ít hơn | dài hơn | Tốt nhất với doc có cấu trúc `##` rõ ràng |
 
 ### Chiến lược của từng thành viên
 
-**Thành viên 1 — Phạm Thanh Sơn (Data Lead)**
-- **Loại chiến lược:** Custom `HeadingChunker` (`max_chunk_size=500`)
-- **Mô tả & lý do chọn cho chủ đề này:** Văn bản chính sách Thương mại Điện tử được cấu trúc rất rõ ràng theo các tiêu đề mục (`#`, `##`, `###`). Việc chia nhỏ theo heading giúp giữ nguyên vẹn toàn bộ 1 điều khoản (như mốc thời gian 7-30 ngày hoặc quy trình hoàn tiền) trong một chunk duy nhất, tránh việc ngữ cảnh bị cắt vụn.
+**Đào Minh Hiếu— FixedSizeChunker**
+- **Loại chiến lược:** FixedSize
+- **Mô tả & lý do chọn cho chủ đề này:** Fixed-size dễ triển khai và hữu ích khi cần kiểm soát số lượng chunk. Tuy nhiên, với chính sách có nhiều mục và định nghĩa rõ ràng, nó dễ cắt giữa các phần quan trọng.
 - **Code snippet (nếu custom):**
 ```python
-class HeadingChunker:
-    """Custom Chunker cho chính sách TMĐT: Chia theo tiêu đề Markdown (#, ##, ###)."""
-    def __init__(self, max_chunk_size: int = 500) -> None:
-        self.max_chunk_size = max_chunk_size
-
-    def chunk(self, text: str) -> list[str]:
-        if not text or not text.strip():
-            return []
-        sections = re.split(r'(?=\n#{1,3}\s+)', text.strip())
-        chunks: list[str] = []
-        for sec in sections:
-            sec_clean = sec.strip()
-            if not sec_clean:
-                continue
-            if len(sec_clean) <= self.max_chunk_size:
-                chunks.append(sec_clean)
-            else:
-                sub_chunker = RecursiveChunker(chunk_size=self.max_chunk_size)
-                chunks.extend(sub_chunker.chunk(sec_clean))
-        return chunks
+FixedSizeChunker(chunk_size=500, overlap=50)
 ```
 
-**Thành viên 2 — Đào Minh Hiếu (Benchmark Lead)**
-- **Loại chiến lược:** `RecursiveChunker` (`chunk_size=400`)
-- **Mô tả & lý do chọn:** Đệ quy cắt theo ranh giới ưu tiên `["\n\n", "\n", ". ", " ", ""]`. Chiến lược này cân bằng tuyệt vời giữa độ dài chunk và việc giữ nguyên cấu trúc đoạn văn bản.
+**Phạm Thanh Sơn — SentenceChunker**
+- **Loại chiến lược:** Sentence
+- **Mô tả & lý do chọn:** Cách này giữ tốt ranh giới câu và phù hợp với văn bản chính sách, nơi mỗi câu thường mang một ý rõ ràng. Tuy nhiên, với các mục dài hoặc nhiều nhánh điều kiện, số lượng chunk có thể không đồng đều.
+- **Code snippet:**
+```python
+SentenceChunker(max_sentences_per_chunk=3)
+```
 
-**Thành viên 3 — Thành viên 3 (Strategy Lead)**
-- **Loại chiến lược:** `FixedSizeChunker` (`chunk_size=500`, `overlap=50`)
-- **Mô tả & lý do chọn:** Chia cố định 500 ký tự với 50 ký tự gối đầu (overlap). Đảm bảo kích thước đồng đều và không bị đứt đoạn thông tin giữa các ranh giới chunk.
+**Nguyễn Minh Kiệt — RecursiveChunker**
+- **Loại chiến lược:** Recursive
+- **Mô tả & lý do chọn:** Recursive ưu tiên chia theo cấp độ ranh giới lớn trước như section, dòng, câu. Đây là cách phù hợp nhất với chính sách có cấu trúc theo mục và điều khoản.
+- **Code snippet:**
+```python
+RecursiveChunker(chunk_size=500, separators=["\n\n", "\n", ". ", " ", ""])
+```
+
+**Trần Hoàng Duy Anh — HeadingChunker**
+- **Loại chiến lược:** Custom / heading-based
+- **Mô tả & lý do chọn:** Với văn bản chính sách Tiki, mỗi `##` hoặc `#` là một đơn vị ngữ nghĩa hoàn chỉnh. Chia theo heading giúp giữ ngữ cảnh tốt nhất và tránh mất tiêu đề khi tách section dài. Khi section quá dài, ta hạ xuống recursive để tiếp tục cắt.
+- **Code snippet:**
+```python
+HeadingChunker(chunk_size=600)
+```
 
 ### So Sánh Giữa Các Thành Viên
 
 | Thành viên | Chiến lược (Strategy) | Điểm truy xuất (/10) | Điểm mạnh | Điểm yếu |
-|-----------|----------|----------------------|-----------|----------|
-| Phạm Thanh Sơn | Custom `HeadingChunker` | 10 / 10 | Giữ trọn vẹn ngữ cảnh tiêu đề và điều khoản chính sách TMĐT. | Cần văn bản có cấu trúc Markdown chuẩn (`#`, `##`). |
-| Đào Minh Hiếu | `RecursiveChunker` | 9.5 / 10 | Linh hoạt, tự động hạ cấp separator khi đoạn quá dài. | Kích thước chunk không đồng đều giữa các điều khoản. |
-| Thành viên 3 | `FixedSizeChunker` | 8.5 / 10 | Dễ cài đặt, kích thước chunk đồng nhất. | Thỉnh thoảng bị cắt giữa câu hoặc giữa bảng thông số. |
+|-----------|----------------------|----------------------|-----------|----------|
+| 1 | FixedSize | 5/10 | Dễ triển khai, đồng đều về độ dài | Có thể cắt mất câu trả lời ở ranh giới chunk |
+| 2 | Sentence | 6/10 | Giữ ranh giới câu, dễ đọc | Một số chunk còn thiếu ngữ cảnh khi câu quá dài |
+| 3 | Recursive | 7/10 | Cân bằng giữa ngữ cảnh và tính thực tế | Với doc quá dài, vẫn có thể bị lặp từ/điểm đồng nhất |
+| 4 | Heading | 7.5/10 | Giữ ngữ cảnh và tiêu đề rất tốt cho chính sách có cấu trúc | Cần xử lý section rất dài bằng recursive để tránh chunk quá lớn |
 
 **Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
-> Đăng ký và phân tích quy định TMĐT tốt nhất khi dùng **`HeadingChunker` kết hợp `RecursiveChunker`**. Lý do vì văn bản pháp lý / chính sách TMĐT có tính cấu trúc mục rất cao; giữ trọn vẹn tiêu đề điều khoản kèm theo các mốc thời gian và số tiền phạt giúp vector embedding nắm bắt trọn vẹn ý định nghiệp vụ, nâng cao tối đa điểm số truy xuất.
-
+Với tài liệu chính sách theo mục như Tiki, chiến lược theo heading và recursive cho hiệu quả tốt hơn fixed size hay sentence thuần túy. Lý do là văn bản này có cấu trúc theo mục, điều khoản và tiêu đề rất rõ, nên nếu giữ tiêu đề cùng phần nội dung thì retrieval có khả năng chọn đúng section hơn. Đây cũng là lý do mà không ít câu hỏi cần filter by `audience` lại bị lẫn nếu chunk không giữ đúng nội dung mục đích.
 
 ---
 
@@ -114,42 +117,45 @@ class HeadingChunker:
 
 ### Câu hỏi đánh giá & Câu trả lời chuẩn (nhóm thống nhất)
 
+> **Đúng 5 câu hỏi**, đa dạng, có thể kiểm chứng; **ít nhất 1 câu** cần lọc metadata mới trả lời tốt. Đây là bộ câu hỏi chung cho mọi thành viên chạy.
+
 | # | Câu hỏi (Query) | Câu trả lời chuẩn (Gold Answer) | Chunk nào chứa thông tin? |
-|---|-------|-------------------------------|--------------------------|
-| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? (Ambiguous audience) | Người mua có thể gửi yêu cầu đổi trả hoặc hoàn tiền trong vòng 7 ngày đối với hàng tiêu dùng và 30 ngày đối với đồ điện tử. | `tiki-return-policy-buyer#0` |
-| 2 | Thời gian xử lý bảo hành sản phẩm gửi qua sàn TMĐT kéo dài bao nhiêu ngày? | Thời gian xử lý bảo hành khi gửi sản phẩm về kho của sàn TMĐT trung bình từ 14 đến 21 ngày làm việc. | `tiki-warranty-policy-buyer#0` |
-| 3 | Nhà bán hàng bị phạt bao nhiêu tiền khi hủy đơn do hết hàng hoặc sai giá? | Nhà bán hàng bị phạt 50.000 VNĐ trên mỗi đơn hàng vi phạm do hủy đơn vì hết hàng hoặc sai giá. | `seller-return-fulfillment-rules#1` |
-| 4 | Sàn TMĐT cấm đăng bán loại rượu có nồng độ cồn từ bao nhiêu độ trở lên? | Không được đăng bán rượu có nồng độ cồn từ 15 độ trở lên. Rượu dưới 15 độ phải có cảnh báo độ tuổi. | `ecommerce-prohibited-items#1` |
-| 5 | Thời hạn gửi khiếu nại sau khi đơn hàng giao thành công là bao nhiêu ngày? | Người mua hoặc Nhà bán hàng có quyền khiếu nại trong vòng 30 ngày kể từ ngày đơn hàng giao thành công. | `ecommerce-dispute-resolution#1` |
+|---|-----------------|--------------------------------|--------------------------|
+| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? | Khách Hàng cần hoàn trả sản phẩm trong vòng 07 ngày làm việc kể từ ngày yêu cầu được chấp nhận. | tiki-return-policy-buyer |
+| 2 | Thời gian xử lý bảo hành sản phẩm thông thường cho người mua kéo dài bao lâu? | Từ 14 đến 30 ngày làm việc tùy thuộc vào linh kiện thay thế của Trung tâm bảo hành chính hãng. | tiki-warranty-policy-buyer |
+| 3 | Nhà bán hàng bị xử lý như thế nào nếu kinh doanh hàng giả, hàng nhái? | Phạt 100% giá trị đơn hàng, bồi thường gấp 3 lần cho người mua và khóa vĩnh viễn gian hàng. | seller-warranty-penalty-rules |
+| 4 | Mặt hàng rượu nào bị cấm kinh doanh trên sàn TMĐT Tiki? | Rượu có nồng độ cồn từ 15 độ trở lên. | ecommerce-prohibited-items |
+| 5 | Thời hạn Tiki ban hành quyết định phân xử tranh chấp cuối cùng là bao lâu? | Trong vòng 05 ngày làm việc kể từ ngày tiếp nhận đầy đủ bằng chứng từ cả hai bên. | ecommerce-dispute-resolution |
 
 ### Tổng hợp chất lượng truy xuất của nhóm
 
+> Cách chấm (theo `docs/SCORING.md`): **2 điểm/câu** — top-3 chứa chunk liên quan + agent trả lời đúng (2), có liên quan nhưng thiếu/không ở top-1 (1), không có trong top-3 (0).
+
 | # | Câu hỏi | Chiến lược tốt nhất cho câu này | Có chunk liên quan trong top-3? | Ghi chú |
-|---|---------|-------------------------------|-------------------------------|---------|
-| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? | `search_with_filter` (`audience: buyer`) | Có (Top-1) | Lọc metadata `audience` giúp phân biệt chính xác quy định 7-30 ngày của người mua với 48h của người bán. |
-| 2 | Thời gian xử lý bảo hành sản phẩm gửi qua sàn... | `RecursiveChunker` | Có (Top-1) | Giữ nguyên các mốc thời gian 14-21 ngày làm việc. |
-| 3 | Nhà bán hàng bị phạt bao nhiêu tiền khi hủy đơn... | `RecursiveChunker` | Có (Top-1) | Định vị chính xác số tiền phạt 50.000 VNĐ. |
-| 4 | Sàn TMĐT cấm đăng bán loại rượu có nồng độ cồn... | `SentenceChunker` | Có (Top-1) | Trích xuất chuẩn nồng độ cồn từ 15 độ trở lên. |
-| 5 | Thời hạn gửi khiếu nại sau khi đơn hàng giao... | `RecursiveChunker` | Có (Top-1) | Lấy đúng thời hạn 30 ngày giải quyết tranh chấp. |
+|---|---------|---------------------------------|--------------------------------|---------|
+| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? | Recursive / Heading | Có | Câu này cần `audience=buyer`; nếu không lọc dễ lẫn với seller-policy |
+| 2 | Thời gian xử lý bảo hành sản phẩm thông thường cho người mua kéo dài bao lâu? | Heading / Sentence | Có | Dùng filter buyer tăng độ chính xác |
+| 3 | Nhà bán hàng bị xử lý như thế nào nếu kinh doanh hàng giả, hàng nhái? | Recursive | Có | Top-3 chứa câu trả lời rõ ràng |
+| 4 | Mặt hàng rượu nào bị cấm kinh doanh trên sàn TMĐT Tiki? | Recursive / Heading | Có | Dễ xác định vì có câu chứa độ cồn cụ thể |
+| 5 | Thời hạn Tiki ban hành quyết định phân xử tranh chấp cuối cùng là bao lâu? | Heading | Có | Chính sách tranh chấp tập trung trong một section rõ ràng |
 
 **Lọc bằng metadata có giúp ích không? Ở câu hỏi nào?**
-> Lọc bằng metadata cực kỳ hữu ích và bắt buộc ở Câu hỏi #1 ("Thời hạn xử lý yêu cầu đổi trả là bao lâu?"). Nếu không dùng `metadata_filter={"audience": "buyer"}`, hệ thống sẽ trả về tài liệu xử lý đổi trả dành cho người bán (48 giờ) gây sai lệch nghiêm trọng. Việc lọc metadata giúp phân định rõ góc nhìn giữa Người mua và Nhà bán hàng trên sàn TMĐT.
-
+Có, metadata filter giúp rất nhiều ở câu hỏi cần phân biệt đối tượng, đặc biệt câu 1: “Thời hạn xử lý yêu cầu đổi trả là bao lâu?” nếu không đặt `audience=buyer`, hệ thống dễ nhầm với chính sách dành cho người bán hoặc chính sách bảo hành. Kết quả benchmark cho thấy khi không lọc, top-3 có thể rơi vào nhiều file khác nhau và dễ bị lẫn; khi lọc theo `audience`, khớp đúng với tài liệu khách hàng. Đây là bằng chứng rõ ràng cho việc metadata filter là bắt buộc trong các câu hỏi đa nghĩa.
 
 ---
 
 ## 4. Thuyết trình (Demo) & Bài học nhóm — Nhóm (5 điểm)
 
 **Những phân tích (insights) hay nhất nhóm sẽ trình bày:**
-> 1. **Hiệu quả của Metadata Pre-filtering:** Metadata filtering giải quyết triệt để bài toán nhập nhằng giữa quy định cho Người mua (buyer) và Nhà bán hàng (seller) mà vector similarity đơn thuần không thể phân biệt.
-> 2. **Ưu thế của Heading-based Chunking:** Chia văn bản theo các tiêu đề `#`, `##` giữ trọn vẹn ngữ cảnh của từng điều khoản pháp lý TMĐT, tránh làm vụn các con số và thời hạn quan trọng.
-> 3. **Source Traceability trong RAG:** Đánh số trích dẫn `[1]`, `[2]` trong prompt giúp người dùng dễ dàng kiểm chứng nguồn gốc câu trả lời từ tài liệu gốc.
+- Chính sách Tiki có cấu trúc rõ theo mục và theo đối tượng, nên chunk theo heading hoặc recursive hiệu quả hơn so với fixed size.
+- Metadata filter không chỉ tăng độ chính xác mà còn giúp tránh lẫn giữa buyer-policy và seller-policy khi từ khoá trùng nhau.
+- Không chỉ top-3 đúng doc_id mới là đủ; phải kiểm tra context thực tế có chứa câu trả lời hay không.
 
 **Bài học rút ra khi so sánh trong nhóm:**
-> Cùng một tập dữ liệu chính sách TMĐT, chiến lược `FixedSizeChunker` dễ cắt ngang giữa các câu điều khoản làm điểm truy xuất giảm nhẹ. Trong khi đó, `HeadingChunker` và `RecursiveChunker` giữ trọn vẹn cấu trúc tiêu đề và ý nghĩa đoạn văn, mang lại điểm số retrieval vượt trội.
+Cùng một bộ dữ liệu nhưng chiến lược chia chunk khác nhau giúp retrieval khác nhau rõ rệt. Fixed-size dễ tiện nhưng dễ cắt mất câu trả lời, trong khi heading và recursive giữ tốt ngữ cảnh mục, đặc biệt với văn bản chính sách có nhánh theo điều khoản. Vì vậy, không có một chiến lược “vạn năng”; phải chọn theo cấu trúc dữ liệu.
 
 **Nếu làm lại, nhóm sẽ thay đổi gì trong chiến lược dữ liệu (data strategy)?**
-> Nếu làm lại, nhóm sẽ bổ sung thêm các thuộc tính metadata chi tiết hơn như `product_category` (điện tử, gia dụng, thực phẩm) và kết hợp mã hóa lai (Hybrid Search: BM25 + Vector Embedding) để tối ưu hóa truy xuất cho các từ khóa chuyên ngành.
+Nếu làm lại, nhóm sẽ ưu tiên chunk theo heading hoặc recursive, đồng thời gắn metadata `audience` lên từng chunk để filter hiệu quả. Ngoài ra, nên đánh giá retrieval ở mức “có chứa câu trả lời thực sự trong context” thay vì chỉ nhìn doc_id nằm trong top-3.
 
 ---
 
@@ -162,4 +168,3 @@ class HeadingChunker:
 | Chất lượng truy xuất (Retrieval Quality) | 10 / 10 |
 | Thuyết trình (Demo) | 5 / 5 |
 | **Tổng phần nhóm** | **40 / 40** |
-

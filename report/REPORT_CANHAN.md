@@ -152,20 +152,25 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 ## 5. Kết quả truy xuất của tôi (Competition Results) — Cá nhân (10 điểm)
 
-Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân của bạn trong gói `src`. **5 câu hỏi này phải trùng với các thành viên cùng nhóm** (xem `REPORT_NHOM.md`).
+Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân trong gói `src` (Chiến lược cá nhân: `HeadingChunker`, max_chunk_size=500). Đã đánh giá 2 mức (Content-level evaluation: 2đ nếu Top-1 chứa `answer_bearing_phrase`, 1đ nếu ở Top-2/3, 0đ nếu vắng mặt/không chứa cụm từ chứa đáp án).
 
-| # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
-|---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? (lọc `buyer`) | `tiki-return-policy-buyer#0`: Đổi trả trong 7 ngày với hàng tiêu dùng, 30 ngày với đồ điện tử. | 0.150 | Có | Trích dẫn [1]: Đổi trả trong 7 ngày (hàng thường) hoặc 30 ngày (điện tử). |
-| 2 | Thời gian xử lý bảo hành sản phẩm gửi qua sàn TMĐT kéo dài bao nhiêu ngày? | `tiki-warranty-policy-buyer#0`: Bảo hành qua sàn trung bình từ 14 đến 21 ngày làm việc. | 0.142 | Có | Trích dẫn [1]: Thời gian xử lý bảo hành từ 14 đến 21 ngày làm việc. |
-| 3 | Nhà bán hàng bị phạt bao nhiêu tiền khi hủy đơn do hết hàng hoặc sai giá? | `seller-return-fulfillment-rules#1`: Phạt 50.000 VNĐ trên mỗi đơn hàng vi phạm hủy đơn. | 0.138 | Có | Trích dẫn [1]: Phạt 50.000 VNĐ trên mỗi đơn hàng vi phạm do hủy đơn. |
-| 4 | Sàn TMĐT cấm đăng bán loại rượu có nồng độ cồn từ bao nhiêu độ trở lên? | `ecommerce-prohibited-items#1`: Không được đăng bán rượu có nồng độ cồn từ 15 độ trở lên. | 0.129 | Có | Trích dẫn [1]: Cấm đăng bán rượu có nồng độ cồn từ 15 độ trở lên. |
-| 5 | Thời hạn gửi khiếu nại sau khi đơn hàng giao thành công là bao nhiêu ngày? | `ecommerce-dispute-resolution#1`: Có quyền khiếu nại trong vòng 30 ngày kể từ ngày giao hàng. | 0.135 | Có | Trích dẫn [1]: Thời hạn gửi khiếu nại là 30 ngày kể từ ngày giao hàng. |
+| # | Câu hỏi (Query) | Top-1 Chunk truy xuất được | Cụm từ chứa đáp án (`answer_bearing_phrase`) | Điểm Chấm (0/1/2đ) | Trạng thái Chấm |
+|---|-------|--------------------------------|-------------------|-------|------------------|
+| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? (lọc `buyer`) | `tiki-warranty-policy-buyer` | `"7 ngày"` | 1 / 2đ | Đạt Top-2/3 (1đ) |
+| 2 | Thời gian xử lý bảo hành sản phẩm gửi qua sàn... | `tiki-warranty-policy-buyer` | `"14 đến 21 ngày"` | 2 / 2đ | Đạt Top-1 (2đ) |
+| 3 | Nhà bán hàng bị phạt bao nhiêu tiền khi hủy đơn... | `seller-return-fulfillment-rules` | `"50.000 VNĐ"` | 2 / 2đ | Đạt Top-1 (2đ) |
+| 4 | Sàn TMĐT cấm đăng bán loại rượu có nồng độ cồn... | `ecommerce-dispute-resolution` | `"15 độ"` | 0 / 2đ | Không đạt (0đ) |
+| 5 | Thời hạn gửi khiếu nại sau khi đơn hàng giao... | `ecommerce-prohibited-items` | `"30 ngày"` | 0 / 2đ | Không đạt (0đ) |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 5 / 5
+**Tổng điểm truy xuất trên `HeadingChunker` (MockEmbedder):** 5 / 10 điểm (Chi tiết lưu tại [ket_qua_benchmark.txt](file:///d:/Vin%20AI/Lab_Day07_Vin%20AI/K4-DAY07-Pham-Thanh-Son-02794/ket_qua_benchmark.txt)).
 
-**Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-> Việc áp dụng đệ quy 2 chiều kết hợp pre-filtering bằng metadata giúp giải quyết triệt để vấn đề nhập nhằng câu hỏi giữa Người mua và Nhà bán hàng. Ngoài ra, trích dẫn nguồn [1], [2] trực tiếp vào câu trả lời của Agent giúp câu trả lời cực kỳ minh bạch và có thể kiểm chứng nguồn gốc (Source Traceability).
+**Đánh giá thử nghiệm A/B Metadata Filter (Câu hỏi #1):**
+> - KHÔNG dùng filter: Retrieval lấy lẫn lộn tài liệu đổi trả người mua và quy trình tranh chấp/nhà bán hàng.
+> - CÓ filter `audience: buyer`: Loại bỏ hoàn toàn 100% tài liệu nhà bán hàng, đảm bảo Agent chỉ truy xuất quy định đổi trả dành cho người mua.
+
+**Lưu ý về Embedder & Bài học rút ra:**
+> Do sử dụng `MockEmbedder` (băm MD5 chuỗi ký tự), vector không phản ánh ngữ nghĩa thật nên một số câu hỏi bị xếp hạng nhiễu (Ví dụ: Câu 4 & 5 bị 0đ do MD5 hash ngẫu nhiên). Việc chấm 2 mức (`answer_bearing_phrase`) giúp nhóm nhận ra sự chênh lệch lớn giữa việc lọt Top-1 vs lọt Top-2/3, khẳng định tầm quan trọng của việc đánh giá nội dung thực tế thay vì chỉ nhìn `doc_id`.
+
 
 
 ---
