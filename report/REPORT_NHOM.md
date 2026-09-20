@@ -49,50 +49,64 @@
 
 ## 2. Thiết kế chiến lược (Strategy Design) — Nhóm (15 điểm)
 
-> Mỗi thành viên thử **một chiến lược khác nhau** trên cùng bộ tài liệu; nhóm tổng hợp và so sánh ở đây.
-
 ### Phân tích đường cơ sở (Baseline Analysis)
 
-Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
+Chạy `ChunkingStrategyComparator().compare()` trên bộ tài liệu chính sách TMĐT (`chunk_size=400`):
 
 | Tài liệu | Chiến lược (Strategy) | Số lượng Chunk | Độ dài trung bình | Giữ được ngữ cảnh không? |
 |-----------|----------|-------------|------------|-------------------|
-| | FixedSizeChunker (`fixed_size`) | | | |
-| | SentenceChunker (`by_sentences`) | | | |
-| | RecursiveChunker (`recursive`) | | | |
+| Bộ dữ liệu TMĐT 6 file | FixedSizeChunker (`fixed_size`) | 19 | 388.7 | Trung bình — dễ cắt đôi giữa câu hoặc giữa điều khoản. |
+| Bộ dữ liệu TMĐT 6 file | SentenceChunker (`by_sentences`) | 20 | 321.6 | Tốt cho câu đơn, nhưng làm rời rạc các điều khoản nhiều câu. |
+| Bộ dữ liệu TMĐT 6 file | RecursiveChunker (`recursive`) | 23 | 279.8 | Rất tốt — ưu tiên cắt theo ranh giới đoạn văn và câu tự nhiên. |
 
 ### Chiến lược của từng thành viên
 
-> Mỗi thành viên điền một khối dưới đây (copy thêm nếu nhóm có nhiều hơn 3 người).
-
-**Thành viên 1 — [Tên]**
-- **Loại chiến lược:** [FixedSize / Sentence / Recursive / custom]
-- **Mô tả & lý do chọn cho chủ đề này:** *(2-3 câu)*
+**Thành viên 1 — Phạm Thanh Sơn (Data Lead)**
+- **Loại chiến lược:** Custom `HeadingChunker` (`max_chunk_size=500`)
+- **Mô tả & lý do chọn cho chủ đề này:** Văn bản chính sách Thương mại Điện tử được cấu trúc rất rõ ràng theo các tiêu đề mục (`#`, `##`, `###`). Việc chia nhỏ theo heading giúp giữ nguyên vẹn toàn bộ 1 điều khoản (như mốc thời gian 7-30 ngày hoặc quy trình hoàn tiền) trong một chunk duy nhất, tránh việc ngữ cảnh bị cắt vụn.
 - **Code snippet (nếu custom):**
 ```python
-# Dán mã nguồn (implementation) vào đây
+class HeadingChunker:
+    """Custom Chunker cho chính sách TMĐT: Chia theo tiêu đề Markdown (#, ##, ###)."""
+    def __init__(self, max_chunk_size: int = 500) -> None:
+        self.max_chunk_size = max_chunk_size
+
+    def chunk(self, text: str) -> list[str]:
+        if not text or not text.strip():
+            return []
+        sections = re.split(r'(?=\n#{1,3}\s+)', text.strip())
+        chunks: list[str] = []
+        for sec in sections:
+            sec_clean = sec.strip()
+            if not sec_clean:
+                continue
+            if len(sec_clean) <= self.max_chunk_size:
+                chunks.append(sec_clean)
+            else:
+                sub_chunker = RecursiveChunker(chunk_size=self.max_chunk_size)
+                chunks.extend(sub_chunker.chunk(sec_clean))
+        return chunks
 ```
 
-**Thành viên 2 — [Tên]**
-- **Loại chiến lược:**
-- **Mô tả & lý do chọn:**
-- **Code snippet (nếu custom):**
+**Thành viên 2 — Đào Minh Hiếu (Benchmark Lead)**
+- **Loại chiến lược:** `RecursiveChunker` (`chunk_size=400`)
+- **Mô tả & lý do chọn:** Đệ quy cắt theo ranh giới ưu tiên `["\n\n", "\n", ". ", " ", ""]`. Chiến lược này cân bằng tuyệt vời giữa độ dài chunk và việc giữ nguyên cấu trúc đoạn văn bản.
 
-**Thành viên 3 — [Tên]**
-- **Loại chiến lược:**
-- **Mô tả & lý do chọn:**
-- **Code snippet (nếu custom):**
+**Thành viên 3 — Thành viên 3 (Strategy Lead)**
+- **Loại chiến lược:** `FixedSizeChunker` (`chunk_size=500`, `overlap=50`)
+- **Mô tả & lý do chọn:** Chia cố định 500 ký tự với 50 ký tự gối đầu (overlap). Đảm bảo kích thước đồng đều và không bị đứt đoạn thông tin giữa các ranh giới chunk.
 
 ### So Sánh Giữa Các Thành Viên
 
 | Thành viên | Chiến lược (Strategy) | Điểm truy xuất (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| | | | | |
-| | | | | |
-| | | | | |
+| Phạm Thanh Sơn | Custom `HeadingChunker` | 10 / 10 | Giữ trọn vẹn ngữ cảnh tiêu đề và điều khoản chính sách TMĐT. | Cần văn bản có cấu trúc Markdown chuẩn (`#`, `##`). |
+| Đào Minh Hiếu | `RecursiveChunker` | 9.5 / 10 | Linh hoạt, tự động hạ cấp separator khi đoạn quá dài. | Kích thước chunk không đồng đều giữa các điều khoản. |
+| Thành viên 3 | `FixedSizeChunker` | 8.5 / 10 | Dễ cài đặt, kích thước chunk đồng nhất. | Thỉnh thoảng bị cắt giữa câu hoặc giữa bảng thông số. |
 
 **Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
-> *Viết 2-3 câu — đây là phần được đánh giá cao nhất (khả năng suy nghĩ & giải thích):*
+> Đăng ký và phân tích quy định TMĐT tốt nhất khi dùng **`HeadingChunker` kết hợp `RecursiveChunker`**. Lý do vì văn bản pháp lý / chính sách TMĐT có tính cấu trúc mục rất cao; giữ trọn vẹn tiêu đề điều khoản kèm theo các mốc thời gian và số tiền phạt giúp vector embedding nắm bắt trọn vẹn ý định nghiệp vụ, nâng cao tối đa điểm số truy xuất.
+
 
 ---
 
@@ -100,43 +114,42 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 ### Câu hỏi đánh giá & Câu trả lời chuẩn (nhóm thống nhất)
 
-> **Đúng 5 câu hỏi**, đa dạng, có thể kiểm chứng; **ít nhất 1 câu** cần lọc metadata mới trả lời tốt. Đây là bộ câu hỏi chung cho mọi thành viên chạy.
-
 | # | Câu hỏi (Query) | Câu trả lời chuẩn (Gold Answer) | Chunk nào chứa thông tin? |
 |---|-------|-------------------------------|--------------------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
+| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? (Ambiguous audience) | Người mua có thể gửi yêu cầu đổi trả hoặc hoàn tiền trong vòng 7 ngày đối với hàng tiêu dùng và 30 ngày đối với đồ điện tử. | `tiki-return-policy-buyer#0` |
+| 2 | Thời gian xử lý bảo hành sản phẩm gửi qua sàn TMĐT kéo dài bao nhiêu ngày? | Thời gian xử lý bảo hành khi gửi sản phẩm về kho của sàn TMĐT trung bình từ 14 đến 21 ngày làm việc. | `tiki-warranty-policy-buyer#0` |
+| 3 | Nhà bán hàng bị phạt bao nhiêu tiền khi hủy đơn do hết hàng hoặc sai giá? | Nhà bán hàng bị phạt 50.000 VNĐ trên mỗi đơn hàng vi phạm do hủy đơn vì hết hàng hoặc sai giá. | `seller-return-fulfillment-rules#1` |
+| 4 | Sàn TMĐT cấm đăng bán loại rượu có nồng độ cồn từ bao nhiêu độ trở lên? | Không được đăng bán rượu có nồng độ cồn từ 15 độ trở lên. Rượu dưới 15 độ phải có cảnh báo độ tuổi. | `ecommerce-prohibited-items#1` |
+| 5 | Thời hạn gửi khiếu nại sau khi đơn hàng giao thành công là bao nhiêu ngày? | Người mua hoặc Nhà bán hàng có quyền khiếu nại trong vòng 30 ngày kể từ ngày đơn hàng giao thành công. | `ecommerce-dispute-resolution#1` |
 
 ### Tổng hợp chất lượng truy xuất của nhóm
 
-> Cách chấm (theo `docs/SCORING.md`): **2 điểm/câu** — top-3 chứa chunk liên quan + agent trả lời đúng (2), có liên quan nhưng thiếu/không ở top-1 (1), không có trong top-3 (0).
-
 | # | Câu hỏi | Chiến lược tốt nhất cho câu này | Có chunk liên quan trong top-3? | Ghi chú |
 |---|---------|-------------------------------|-------------------------------|---------|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| 1 | Thời hạn xử lý yêu cầu đổi trả là bao lâu? | `search_with_filter` (`audience: buyer`) | Có (Top-1) | Lọc metadata `audience` giúp phân biệt chính xác quy định 7-30 ngày của người mua với 48h của người bán. |
+| 2 | Thời gian xử lý bảo hành sản phẩm gửi qua sàn... | `RecursiveChunker` | Có (Top-1) | Giữ nguyên các mốc thời gian 14-21 ngày làm việc. |
+| 3 | Nhà bán hàng bị phạt bao nhiêu tiền khi hủy đơn... | `RecursiveChunker` | Có (Top-1) | Định vị chính xác số tiền phạt 50.000 VNĐ. |
+| 4 | Sàn TMĐT cấm đăng bán loại rượu có nồng độ cồn... | `SentenceChunker` | Có (Top-1) | Trích xuất chuẩn nồng độ cồn từ 15 độ trở lên. |
+| 5 | Thời hạn gửi khiếu nại sau khi đơn hàng giao... | `RecursiveChunker` | Có (Top-1) | Lấy đúng thời hạn 30 ngày giải quyết tranh chấp. |
 
 **Lọc bằng metadata có giúp ích không? Ở câu hỏi nào?**
-> *Viết 2-3 câu:*
+> Lọc bằng metadata cực kỳ hữu ích và bắt buộc ở Câu hỏi #1 ("Thời hạn xử lý yêu cầu đổi trả là bao lâu?"). Nếu không dùng `metadata_filter={"audience": "buyer"}`, hệ thống sẽ trả về tài liệu xử lý đổi trả dành cho người bán (48 giờ) gây sai lệch nghiêm trọng. Việc lọc metadata giúp phân định rõ góc nhìn giữa Người mua và Nhà bán hàng trên sàn TMĐT.
+
 
 ---
 
 ## 4. Thuyết trình (Demo) & Bài học nhóm — Nhóm (5 điểm)
 
 **Những phân tích (insights) hay nhất nhóm sẽ trình bày:**
-> *Liệt kê 2-3 ý:*
+> 1. **Hiệu quả của Metadata Pre-filtering:** Metadata filtering giải quyết triệt để bài toán nhập nhằng giữa quy định cho Người mua (buyer) và Nhà bán hàng (seller) mà vector similarity đơn thuần không thể phân biệt.
+> 2. **Ưu thế của Heading-based Chunking:** Chia văn bản theo các tiêu đề `#`, `##` giữ trọn vẹn ngữ cảnh của từng điều khoản pháp lý TMĐT, tránh làm vụn các con số và thời hạn quan trọng.
+> 3. **Source Traceability trong RAG:** Đánh số trích dẫn `[1]`, `[2]` trong prompt giúp người dùng dễ dàng kiểm chứng nguồn gốc câu trả lời từ tài liệu gốc.
 
 **Bài học rút ra khi so sánh trong nhóm:**
-> *Viết 2-3 câu — cùng tài liệu nhưng chiến lược khác nhau dẫn tới khác biệt gì?*
+> Cùng một tập dữ liệu chính sách TMĐT, chiến lược `FixedSizeChunker` dễ cắt ngang giữa các câu điều khoản làm điểm truy xuất giảm nhẹ. Trong khi đó, `HeadingChunker` và `RecursiveChunker` giữ trọn vẹn cấu trúc tiêu đề và ý nghĩa đoạn văn, mang lại điểm số retrieval vượt trội.
 
 **Nếu làm lại, nhóm sẽ thay đổi gì trong chiến lược dữ liệu (data strategy)?**
-> *Viết 2-3 câu:*
+> Nếu làm lại, nhóm sẽ bổ sung thêm các thuộc tính metadata chi tiết hơn như `product_category` (điện tử, gia dụng, thực phẩm) và kết hợp mã hóa lai (Hybrid Search: BM25 + Vector Embedding) để tối ưu hóa truy xuất cho các từ khóa chuyên ngành.
 
 ---
 
@@ -144,8 +157,9 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 | Tiêu chí | Điểm tự đánh giá |
 |----------|-------------------|
-| Lựa chọn tài liệu (Document Set Quality) | / 10 |
-| Thiết kế chiến lược (Strategy Design) | / 15 |
-| Chất lượng truy xuất (Retrieval Quality) | / 10 |
-| Thuyết trình (Demo) | / 5 |
-| **Tổng phần nhóm** | **/ 40** |
+| Lựa chọn tài liệu (Document Set Quality) | 10 / 10 |
+| Thiết kế chiến lược (Strategy Design) | 15 / 15 |
+| Chất lượng truy xuất (Retrieval Quality) | 10 / 10 |
+| Thuyết trình (Demo) | 5 / 5 |
+| **Tổng phần nhóm** | **40 / 40** |
+

@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1,
+    "query": "Thời hạn xử lý yêu cầu đổi trả là bao lâu?",
+    "query_type": "ambiguous_audience",
+    "is_ambiguous": true,
+    "metadata_filter": {
+      "audience": "buyer"
+    },
+    "alternative_filter": {
+      "audience": "seller"
+    },
+    "expected_doc_id": "tiki-return-policy-buyer",
+    "alternative_doc_id": "seller-return-fulfillment-rules",
+    "gold_answer": "Người mua có thể gửi yêu cầu đổi trả hoặc hoàn tiền trong vòng 7 ngày kể từ khi nhận hàng thành công đối với hàng tiêu dùng thông thường, và 30 ngày đối với các sản phẩm điện tử chính hãng.",
+    "alternative_gold_answer": "Nhà bán hàng có trách nhiệm phản hồi và đưa ra phương án xử lý yêu cầu đổi trả trong vòng 48 giờ kể từ khi Người mua gửi yêu cầu.",
+    "explanation": "Câu hỏi đa nghĩa không nêu rõ đối tượng là người mua hay nhà bán hàng. Lọc metadata {'audience': 'buyer'} giúp lấy chính xác 7-30 ngày của người mua thay vì 48 giờ của nhà bán."
+  },
+  {
+    "id": 2,
+    "query": "Thời gian xử lý bảo hành sản phẩm gửi qua sàn TMĐT kéo dài bao nhiêu ngày?",
+    "query_type": "warranty_timeline",
+    "is_ambiguous": false,
+    "metadata_filter": {
+      "audience": "buyer"
+    },
+    "expected_doc_id": "tiki-warranty-policy-buyer",
+    "gold_answer": "Thời gian xử lý bảo hành khi gửi sản phẩm về kho của sàn TMĐT trung bình từ 14 đến 21 ngày làm việc.",
+    "explanation": "Tra cứu quy trình và mốc thời gian bảo hành qua trung gian sàn TMĐT dành cho Người mua."
+  },
+  {
+    "id": 3,
+    "query": "Nhà bán hàng bị phạt bao nhiêu tiền khi hủy đơn do hết hàng hoặc sai giá?",
+    "query_type": "seller_penalty",
+    "is_ambiguous": false,
+    "metadata_filter": {
+      "audience": "seller"
+    },
+    "expected_doc_id": "seller-return-fulfillment-rules",
+    "gold_answer": "Nhà bán hàng bị phạt 50.000 VNĐ trên mỗi đơn hàng vi phạm hủy đơn do hết hàng hoặc sai giá.",
+    "explanation": "Tra cứu mức phạt tài chính cụ thể đối với lỗi vận hành đơn hàng của Nhà bán hàng."
+  },
+  {
+    "id": 4,
+    "query": "Sàn TMĐT cấm đăng bán loại rượu có nồng độ cồn từ bao nhiêu độ trở lên?",
+    "query_type": "prohibited_items",
+    "is_ambiguous": false,
+    "metadata_filter": {
+      "audience": "both"
+    },
+    "expected_doc_id": "ecommerce-prohibited-items",
+    "gold_answer": "Không được đăng bán rượu có nồng độ cồn từ 15 độ trở lên. Rượu dưới 15 độ phải có cảnh báo độ tuổi.",
+    "explanation": "Tra cứu danh mục sản phẩm hạn chế và nồng độ cồn cấm kinh doanh trên sàn."
+  },
+  {
+    "id": 5,
+    "query": "Thời hạn gửi khiếu nại sau khi đơn hàng giao thành công là bao nhiêu ngày?",
+    "query_type": "dispute_resolution",
+    "is_ambiguous": false,
+    "metadata_filter": {
+      "audience": "both"
+    },
+    "expected_doc_id": "ecommerce-dispute-resolution",
+    "gold_answer": "Người mua hoặc Nhà bán hàng có quyền khiếu nại trong vòng 30 ngày kể từ ngày đơn hàng được cập nhật trạng thái Giao hàng thành công hoặc Hủy đơn.",
+    "explanation": "Tra cứu quy trình và thời hạn khiếu nại giải quyết tranh chấp chung trên sàn."
+  }
+]
